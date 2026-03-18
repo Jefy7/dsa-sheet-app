@@ -10,7 +10,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!initialized) return;
-    router.replace(isAuthenticated ? '/dashboard' : '/login');
+    router.replace(isAuthenticated ? '/dashboard' : '/register');
   }, [initialized, isAuthenticated, router]);
 
   return <div className="flex min-h-screen items-center justify-center">Redirecting...</div>;
