@@ -30,13 +30,47 @@ export const getErrorMessage = (error: unknown): string => {
 };
 
 export const setupAxiosInterceptors = (dispatch: AppDispatch) => {
+  let isRefreshing = false;
+  let refreshPromise: Promise<void> | null = null;
+
   const responseInterceptor = api.interceptors.response.use(
     (response) => response,
-    (error: AxiosError) => {
-      if (error.response?.status === 401) {
-        dispatch(forceLogout());
+    async (error: AxiosError) => {
+      const originalRequest = error.config;
+
+      if (!originalRequest || error.response?.status !== 401) {
+        return Promise.reject(error);
       }
-      return Promise.reject(error);
+
+      const requestUrl = originalRequest.url ?? '';
+      const isAuthEndpoint =
+        requestUrl.includes('/api/auth/login') ||
+        requestUrl.includes('/api/auth/register') ||
+        requestUrl.includes('/api/auth/refresh') ||
+        requestUrl.includes('/api/auth/logout');
+
+      if (isAuthEndpoint || (originalRequest as { _retry?: boolean })._retry) {
+        dispatch(forceLogout());
+        return Promise.reject(error);
+      }
+
+      (originalRequest as { _retry?: boolean })._retry = true;
+
+      try {
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = api.post('/api/auth/refresh').then(() => undefined);
+        }
+
+        await refreshPromise;
+        return api(originalRequest);
+      } catch (refreshError) {
+        dispatch(forceLogout());
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+        refreshPromise = null;
+      }
     },
   );
 

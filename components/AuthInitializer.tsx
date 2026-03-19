@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { fetchUser } from '@/features/auth/authSlice';
+import { fetchMe } from '@/features/auth/authSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 export default function AuthInitializer() {
@@ -10,7 +10,7 @@ export default function AuthInitializer() {
 
   useEffect(() => {
     if (!initialized) {
-      void dispatch(fetchUser());
+      void dispatch(fetchMe());
     }
   }, [dispatch, initialized]);
 
