@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, type KeyboardEvent } from 'react';
+import toast from 'react-hot-toast';
 import DifficultyBadge from './DifficultyBadge';
 import ProblemLinks from './ProblemLinks';
 import type { Problem } from '@/types/topic';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { fetchProgress, updateProgress } from '@/features/progress/progressSlice';
-import toast from 'react-hot-toast';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 interface ProblemItemProps {
   problem: Problem;
@@ -32,25 +32,42 @@ export default function ProblemItem({ problem }: ProblemItemProps) {
     void dispatch(fetchProgress());
   }, [completed, dispatch, problem.id]);
 
+  const handleCheckboxKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (!isUpdating) void onToggle();
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-3 rounded border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex items-start justify-between gap-3">
-        <p className="line-clamp-2 flex-1 break-words text-sm font-medium leading-6">{problem.title}</p>
-        <DifficultyBadge difficulty={problem.difficulty} />
-      </div>
+    <div className="grid grid-cols-[24px_1fr_auto_auto] items-center gap-3 border-t border-[#1e1e2e] px-1 py-2.5 hover:bg-[rgba(124,109,250,0.03)]">
+      <button
+        type="button"
+        onClick={() => void onToggle()}
+        disabled={isUpdating}
+        aria-label={completed ? `Mark ${problem.title} as incomplete` : `Mark ${problem.title} as completed`}
+        aria-checked={completed}
+        role="checkbox"
+        onKeyDown={handleCheckboxKey}
+        className={`flex h-[18px] w-[18px] items-center justify-center rounded-[2px] border text-[10px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+          completed
+            ? 'border-[#7c6dfa] bg-[#7c6dfa] text-white'
+            : 'border-[#3d3680] bg-transparent text-transparent hover:border-[#7c6dfa]'
+        }`}
+      >
+        ✓
+      </button>
+
+      <span
+        className={`text-[13px] tracking-[0.02em] ${
+          completed ? 'text-[#6b6880] line-through' : 'text-[#e8e6ff]'
+        }`}
+      >
+        {problem.title}
+      </span>
 
       <ProblemLinks links={problem.links} />
-
-      <label className="flex cursor-pointer items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={completed}
-          onChange={onToggle}
-          disabled={isUpdating}
-          className="h-4 w-4 rounded border-slate-300 text-indigo-600 disabled:cursor-not-allowed"
-        />
-        <span>{isUpdating ? 'Updating...' : 'Completed'}</span>
-      </label>
+      <DifficultyBadge difficulty={problem.difficulty} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ProblemItem from './ProblemItem';
 import type { Topic } from '@/types/topic';
 
@@ -8,44 +8,85 @@ interface TopicAccordionProps {
   topics: Array<Topic & { completionPct: number; completedCount: number; totalCount: number }>;
 }
 
+function TopicProgress({ completed, total }: { completed: number; total: number }) {
+  const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+  return (
+    <div className="flex min-w-[160px] items-center gap-2.5">
+      <div className="h-[3px] flex-1 overflow-hidden rounded bg-[#1e1e2e]">
+        <div
+          className="h-full rounded bg-[linear-gradient(90deg,#7c6dfa,#a78bfa)] transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="min-w-9 text-right text-[10px] text-[#6b6880]">
+        {completed}/{total}
+      </span>
+    </div>
+  );
+}
+
 export default function TopicAccordion({ topics }: TopicAccordionProps) {
-  const [openTopicId, setOpenTopicId] = useState<string | null>(topics[0]?.id ?? null);
+  const initialTopicId = topics[0]?.id;
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(() => new Set(initialTopicId ? [initialTopicId] : []));
+
+  const topicIds = useMemo(() => new Set(topics.map((topic) => topic.id)), [topics]);
+
+  const normalizedExpanded = useMemo(
+    () => new Set([...expandedTopics].filter((topicId) => topicIds.has(topicId))),
+    [expandedTopics, topicIds],
+  );
+
+  const toggleTopic = (topicId: string) => {
+    setExpandedTopics((prev) => {
+      const next = new Set(prev);
+      if (next.has(topicId)) {
+        next.delete(topicId);
+      } else {
+        next.add(topicId);
+      }
+      return next;
+    });
+  };
 
   if (topics.length === 0) {
-    return (
-      <div className="rounded border border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-        No topics found for selected filters.
-      </div>
-    );
+    return <div className="p-8 text-center text-xs text-[#6b6880]">No problems match this filter.</div>;
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       {topics.map((topic) => {
-        const isOpen = openTopicId === topic.id;
-
+        const isOpen = normalizedExpanded.has(topic.id);
         return (
-          <section key={topic.id} className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
+          <section key={topic.id} className="mx-2 border-b border-[#1e1e2e] md:mx-8">
             <button
               type="button"
-              onClick={() => setOpenTopicId((prev) => (prev === topic.id ? null : topic.id))}
-              className="flex w-full items-center justify-between bg-white px-4 py-3 text-left hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+              className="flex w-full items-center gap-3 py-4 text-left transition-opacity hover:opacity-90"
+              onClick={() => toggleTopic(topic.id)}
+              aria-expanded={isOpen}
             >
+              <span className={`text-[10px] text-[#6b6880] transition-transform ${isOpen ? 'rotate-90' : ''}`}>
+                ▶
+              </span>
+
               <div>
-                <h2 className="text-base font-semibold">{topic.title}</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {topic.completedCount}/{topic.totalCount} completed ({topic.completionPct}%)
+                <h2 className="font-serif text-lg font-normal tracking-[-0.02em] text-[#e8e6ff]">{topic.title}</h2>
+                <p className="text-[11px] tracking-[0.04em] text-[#6b6880]">
+                  {topic.description ?? `Practice ${topic.totalCount} curated problems in this topic`}
                 </p>
               </div>
-              <span className="text-xs">{isOpen ? 'Hide' : 'View'}</span>
+
+              <div className="ml-auto">
+                <TopicProgress completed={topic.completedCount} total={topic.totalCount} />
+              </div>
             </button>
 
             {isOpen ? (
-              <div className="grid gap-3 bg-slate-50 p-3 dark:bg-slate-950/40 md:grid-cols-2">
+              <div>
                 {topic.problems.length > 0 ? (
                   topic.problems.map((problem) => <ProblemItem key={problem.id} problem={problem} />)
                 ) : (
-                  <p className="text-sm text-slate-500">No problems in this topic yet.</p>
+                  <div className="px-2 py-6 text-center text-xs text-[#6b6880]">No problems match this filter.</div>
                 )}
               </div>
             ) : null}

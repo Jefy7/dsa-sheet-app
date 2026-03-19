@@ -26,6 +26,7 @@ export default function DashboardPage() {
   const filteredTopics = useAppSelector((state) => selectFilteredTopics(state, search, difficulty));
 
   const isInitialLoading = topicsState.loading || progressState.loading;
+
   useEffect(() => {
     void dispatch(fetchTopics());
     void dispatch(fetchProgress());
@@ -39,7 +40,7 @@ export default function DashboardPage() {
     if (progressState.error) toast.error(progressState.error);
   }, [progressState.error]);
 
-  const overallProgress = useMemo(() => {
+  const progressStats = useMemo(() => {
     const totals = filteredTopics.reduce(
       (acc, topic) => {
         acc.completed += topic.completedCount;
@@ -49,8 +50,8 @@ export default function DashboardPage() {
       { completed: 0, total: 0 },
     );
 
-    if (totals.total === 0) return 0;
-    return Math.round((totals.completed / totals.total) * 100);
+    const pct = totals.total === 0 ? 0 : Math.round((totals.completed / totals.total) * 100);
+    return { ...totals, pct };
   }, [filteredTopics]);
 
   const handleLogout = async () => {
@@ -59,29 +60,48 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <main className="mx-auto min-h-screen w-full max-w-6xl p-4 md:p-6">
-        <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap');
+
+        body {
+          background: #0a0a0f;
+          color: #e8e6ff;
+          font-family: 'DM Mono', 'Courier New', monospace;
+        }
+      `}</style>
+
+      <main className="relative min-h-screen bg-[#0a0a0f] pb-16">
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(124,109,250,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(124,109,250,0.03) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+          }}
+        />
+
+        <header className="sticky top-0 z-10 flex flex-wrap items-center gap-4 border-b border-[#1e1e2e] bg-[rgba(10,10,15,0.9)] px-4 py-4 backdrop-blur md:px-8">
           <div>
-            <h1 className="text-2xl font-bold">DSA Dashboard</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Welcome, {authUser?.name ?? authUser?.email ?? 'Learner'}.</p>
+            <h1 className="font-serif text-2xl font-normal tracking-[-0.02em]">
+              DSA <em className="text-[#7c6dfa]">Sheet</em>
+            </h1>
+            <p className="text-[11px] text-[#6b6880]">{authUser?.name ?? authUser?.email ?? 'Learner'}</p>
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
-          >
-            Logout
-          </button>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="text-[11px] text-[#6b6880]">
+              <strong className="text-[#7c6dfa]">{progressStats.completed}</strong> / {progressStats.total} solved
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-[2px] border border-[#1e1e2e] px-3 py-1.5 text-[10px] uppercase tracking-[0.08em] text-[#6b6880] transition-colors hover:border-[#3d3680] hover:text-[#e8e6ff]"
+            >
+              Logout
+            </button>
+          </div>
         </header>
-
-        <section className="mb-4 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <p className="mb-2 text-sm text-slate-500">Overall progress</p>
-          <div className="h-3 overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
-            <div className="h-full bg-indigo-600 transition-all" style={{ width: `${overallProgress}%` }} />
-          </div>
-          <p className="mt-2 text-sm font-medium">{overallProgress}% completed</p>
-        </section>
 
         <DashboardToolbar
           search={search}
@@ -90,17 +110,33 @@ export default function DashboardPage() {
           onDifficultyChange={setDifficulty}
         />
 
-        {isInitialLoading ? <Loader label="Loading topics and progress..." /> : null}
+        <section className="relative z-[1] pb-8">
+          {isInitialLoading ? <Loader label="Loading topics and progress..." /> : null}
 
-        {topicsState.error ? <ErrorState message={topicsState.error} onRetry={() => void dispatch(fetchTopics())} /> : null}
+          {topicsState.error ? <ErrorState message={topicsState.error} onRetry={() => void dispatch(fetchTopics())} /> : null}
 
-        {progressState.error ? (
-          <div className="mb-3">
-            <ErrorState message={progressState.error} onRetry={() => void dispatch(fetchProgress())} />
+          {progressState.error ? (
+            <div className="mb-3">
+              <ErrorState message={progressState.error} onRetry={() => void dispatch(fetchProgress())} />
+            </div>
+          ) : null}
+
+          {!isInitialLoading && !topicsState.error && !progressState.error ? <TopicAccordion topics={filteredTopics} /> : null}
+        </section>
+
+        <div className="fixed bottom-0 left-0 right-0 z-10 flex items-center gap-4 border-t border-[#1e1e2e] bg-[rgba(10,10,15,0.95)] px-4 py-2.5 text-[11px] text-[#6b6880] backdrop-blur md:px-8">
+          <span>
+            <strong className="text-[#7c6dfa]">{progressStats.completed}</strong> solved ·{' '}
+            {Math.max(progressStats.total - progressStats.completed, 0)} remaining
+          </span>
+          <div className="h-0.5 flex-1 overflow-hidden rounded bg-[#1e1e2e]">
+            <div
+              className="h-full rounded bg-[linear-gradient(90deg,#7c6dfa,#a78bfa)] transition-all"
+              style={{ width: `${progressStats.pct}%` }}
+            />
           </div>
-        ) : null}
-
-        {!isInitialLoading && !topicsState.error && !progressState.error ? <TopicAccordion topics={filteredTopics} /> : null}
+          <span>{progressStats.pct}% complete</span>
+        </div>
       </main>
     </ProtectedRoute>
   );
