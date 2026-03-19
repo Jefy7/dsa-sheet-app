@@ -17,12 +17,60 @@ const initialState: TopicState = {
   hasFetched: false,
 };
 
-type TopicsResponse = { success: boolean, message: string, data?: { items: Topic[] } };
+type ApiDifficulty = 'EASY' | 'MEDIUM' | 'HARD' | 'Easy' | 'Medium' | 'Hard';
+
+interface ApiProblem {
+  id: string;
+  title: string;
+  difficulty: ApiDifficulty;
+  youtubeLink?: string | null;
+  leetcodeLink?: string | null;
+  codeforcesLink?: string | null;
+  articleLink?: string | null;
+  links?: Topic['problems'][number]['links'];
+}
+
+interface ApiTopic {
+  id: string;
+  title: string;
+  description?: string;
+  problems: ApiProblem[];
+}
+
+type TopicsResponse = { success: boolean, message: string, data?: { items: ApiTopic[] } };
+
+const normalizeDifficulty = (difficulty: ApiDifficulty): Topic['problems'][number]['difficulty'] => {
+  switch (difficulty.toUpperCase()) {
+    case 'MEDIUM':
+      return 'Medium';
+    case 'HARD':
+      return 'Hard';
+    case 'EASY':
+    default:
+      return 'Easy';
+  }
+};
 
 const normalizeTopics = (payload: TopicsResponse): Topic[] => {
-
   if (Array.isArray(payload.data?.items)) {
-    return payload.data.items;
+    return payload.data.items.map((topic) => ({
+      id: topic.id,
+      title: topic.title,
+      description: topic.description,
+      problems: Array.isArray(topic.problems)
+        ? topic.problems.map((problem) => ({
+            id: problem.id,
+            title: problem.title,
+            difficulty: normalizeDifficulty(problem.difficulty),
+            links: {
+              youtube: problem.links?.youtube ?? problem.youtubeLink ?? undefined,
+              leetcode: problem.links?.leetcode ?? problem.leetcodeLink ?? undefined,
+              codeforces: problem.links?.codeforces ?? problem.codeforcesLink ?? undefined,
+              article: problem.links?.article ?? problem.articleLink ?? undefined,
+            },
+          }))
+        : [],
+    }));
   }
 
   return [];

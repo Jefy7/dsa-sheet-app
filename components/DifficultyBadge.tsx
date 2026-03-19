@@ -3,19 +3,19 @@ import type { Difficulty } from '@/types/topic';
 
 const difficultyStyles: Record<Difficulty, CSSProperties> = {
   Easy: {
-    color: '#4ade80',
-    background: 'rgba(74, 222, 128, 0.1)',
-    borderColor: 'rgba(74, 222, 128, 0.2)',
+    color: '#22c55e',
+    background: 'rgba(34, 197, 94, 0.06)',
+    borderColor: 'rgba(34, 197, 94, 0.14)',
   },
   Medium: {
-    color: '#fbbf24',
-    background: 'rgba(251, 191, 36, 0.1)',
-    borderColor: 'rgba(251, 191, 36, 0.2)',
+    color: '#eab308',
+    background: 'rgba(234, 179, 8, 0.06)',
+    borderColor: 'rgba(234, 179, 8, 0.14)',
   },
   Hard: {
-    color: '#f87171',
-    background: 'rgba(248, 113, 113, 0.1)',
-    borderColor: 'rgba(248, 113, 113, 0.2)',
+    color: '#ef4444',
+    background: 'rgba(239, 68, 68, 0.06)',
+    borderColor: 'rgba(239, 68, 68, 0.14)',
   },
 };
 
