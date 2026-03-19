@@ -21,13 +21,12 @@ export const selectFilteredTopics = createSelector(
   [selectMergedTopics, (_: RootState, query: string) => query, (_: RootState, __: string, difficulty: Difficulty | 'All') => difficulty],
   (topics, query, difficulty) => {
     const normalized = query.trim().toLowerCase();
-
     return topics
       .map((topic) => ({
         ...topic,
         problems: topic.problems.filter((problem) => {
           const matchesQuery = normalized.length === 0 || problem.title.toLowerCase().includes(normalized);
-          const matchesDifficulty = difficulty === 'All' || problem.difficulty === difficulty;
+          const matchesDifficulty = difficulty === 'All' || problem.difficulty.toLowerCase() === difficulty.toLowerCase();
           return matchesQuery && matchesDifficulty;
         }),
       }))

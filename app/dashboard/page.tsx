@@ -26,7 +26,6 @@ export default function DashboardPage() {
   const filteredTopics = useAppSelector((state) => selectFilteredTopics(state, search, difficulty));
 
   const isInitialLoading = topicsState.loading || progressState.loading;
-
   useEffect(() => {
     void dispatch(fetchTopics());
     void dispatch(fetchProgress());

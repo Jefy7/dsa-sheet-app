@@ -17,19 +17,12 @@ const initialState: TopicState = {
   hasFetched: false,
 };
 
-type TopicsResponse = Topic[] | { topics?: Topic[]; data?: Topic[] };
+type TopicsResponse = { success: boolean, message: string, data?: { items: Topic[] } };
 
 const normalizeTopics = (payload: TopicsResponse): Topic[] => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
 
-  if (Array.isArray(payload.topics)) {
-    return payload.topics;
-  }
-
-  if (Array.isArray(payload.data)) {
-    return payload.data;
+  if (Array.isArray(payload.data?.items)) {
+    return payload.data.items;
   }
 
   return [];
@@ -39,8 +32,8 @@ export const fetchTopics = createAsyncThunk<Topic[], void, { rejectValue: string
   'topics/fetchTopics',
   async (_, thunkApi) => {
     try {
-      const { data } = await api.get<TopicsResponse>('/api/topics');
-      return normalizeTopics(data);
+      const res = await api.get<TopicsResponse>('/api/topics');
+      return normalizeTopics(res.data);
     } catch (error) {
       return thunkApi.rejectWithValue(getErrorMessage(error));
     }
