@@ -63,6 +63,18 @@ export const fetchUser = createAsyncThunk<AuthResponse, void, { rejectValue: str
   },
 );
 
+export const fetchMe = createAsyncThunk(
+  'auth/fetchMe',
+  async (_, thunkApi) => {
+    try {
+      const res = await api.get('/api/auth/me');
+      return res.data.data;
+    } catch (err) {
+      return thunkApi.rejectWithValue('Not authenticated');
+    }
+  }
+);
+
 export const logout = createAsyncThunk<void, void, { rejectValue: string }>(
   'auth/logout',
   async (_, thunkApi) => {
@@ -133,6 +145,22 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.error = action.payload ?? null;
+      })
+      .addCase(fetchMe.pending, (state) => {
+        state.loading = true;
+        state.initialized = false;
+      })
+      .addCase(fetchMe.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.isAuthenticated = true;
+        state.initialized = true;
+      })
+      .addCase(fetchMe.rejected, (state) => {
+        state.loading = false;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.initialized = true;
       })
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
