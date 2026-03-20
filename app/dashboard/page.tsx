@@ -18,7 +18,8 @@ import type { Difficulty } from '@/types/topic';
 export default function DashboardPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const authUser = useAppSelector((state) => state.auth.user);
+  const authState = useAppSelector((state) => state.auth);
+  const authUser = authState.user;
   const topicsState = useAppSelector((state) => state.topics);
   const progressState = useAppSelector((state) => state.progress);
 
@@ -30,9 +31,11 @@ export default function DashboardPage() {
   const isInitialLoading = topicsState.loading || progressState.loading;
 
   useEffect(() => {
+    if (!authState.initialized || !authState.isAuthenticated) return;
+
     void dispatch(fetchTopics());
     void dispatch(fetchProgress());
-  }, [dispatch]);
+  }, [authState.initialized, authState.isAuthenticated, dispatch]);
 
   useEffect(() => {
     if (topicsState.error) toast.error(topicsState.error);
