@@ -25,8 +25,13 @@ export const fetchProgress = createAsyncThunk<ProgressItem[], void, { rejectValu
   'progress/fetchProgress',
   async (_, thunkApi) => {
     try {
-      const { data } = await api.get<ProgressItem[]>('/api/progress');
-      return Array.isArray(data) ? data : [];
+      const { data } = await api.get<{ data?: ProgressItem[] } | ProgressItem[]>('/api/progress');
+
+      if (Array.isArray(data)) {
+        return data;
+      }
+
+      return Array.isArray(data?.data) ? data.data : [];
     } catch (error) {
       return thunkApi.rejectWithValue(getErrorMessage(error));
     }
