@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardToolbar from '@/components/DashboardToolbar';
@@ -15,6 +16,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import type { Difficulty } from '@/types/topic';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
   const topicsState = useAppSelector((state) => state.topics);
@@ -54,8 +56,21 @@ export default function DashboardPage() {
     return { ...totals, pct };
   }, [filteredTopics]);
 
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const handleLogout = async () => {
-    await dispatch(logout());
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    const action = await dispatch(logout());
+
+    if (logout.fulfilled.match(action)) {
+      toast.success('Logged out successfully.');
+      router.replace('/login');
+    } else {
+      toast.error(action.payload ?? 'Logout failed.');
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -96,9 +111,10 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-[2px] border border-[#1e1e2e] px-3 py-1.5 text-[10px] uppercase tracking-[0.08em] text-[#6b6880] transition-colors hover:border-[#3d3680] hover:text-[#e8e6ff]"
+              disabled={isLoggingOut}
+              className="rounded-[2px] border border-[#1e1e2e] px-3 py-1.5 text-[10px] uppercase tracking-[0.08em] text-[#6b6880] transition-colors hover:border-[#3d3680] hover:text-[#e8e6ff] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Logout
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
             </button>
           </div>
         </header>
